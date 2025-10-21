@@ -18,6 +18,7 @@ class Search:
         self.input_field_config = self.search_config["input_field"]
 
         self.selected_result: str | None = None
+        self.result_rects: list[Rect] = []
         self.back_rect: Rect | None = None
         self.results: list[str] = []
         self.isSearching = False
@@ -47,16 +48,20 @@ class Search:
 
     def draw_search_results(self) -> None:
         if not self.results:
+            self.result_rects = []
             return None
             
         result_y = self.input_field.rect.bottom + (self.input_field_config["text_padding_left"] * 2)
         result_font = font.Font(None, self.search_config["result_font_size"])
+        self.result_rects = []
 
         for i, result in enumerate(self.results[:self.search_config["max_results"]]):
             result_surface = result_font.render(result, True, self.search_config["result_color"])
             result_rect = result_surface.get_rect()
             result_rect.x = self.input_field.rect.x
             result_rect.y = result_y + (i * self.search_config["result_gap"])
+            
+            self.result_rects.append(result_rect)
 
             mouse_pos = mouse.get_pos()
             if result_rect.collidepoint(mouse_pos):
@@ -72,6 +77,8 @@ class Search:
         self.results = get_file_path_by_name(txt, show_all=show_all)
 
     def load_selected_result(self) -> None:
+        print(self.results)
+        print(self.selected_result)
         if self.results:
             self.selected_result = self.results[0]
             print(f"Selected dataset: {self.selected_result}")
@@ -125,6 +132,9 @@ class Search:
         if self.back_rect and is_back_instruction_clicked(mouse_position=event.pos, back_rect=self.back_rect):
             self.isSearching = False
             return True
+
+        if self.check_if_result_clicked(event):
+            return True
             
         if not self.handle_event(event):
             return False
@@ -134,6 +144,15 @@ class Search:
             return False
 
         return True
+
+    def check_if_result_clicked(self, event: pygame_event.Event) -> bool:
+        for i, result_rect in enumerate(self.result_rects):
+            if result_rect.collidepoint(event.pos):
+                self.selected_result = self.results[i]
+                print(f"Selected dataset: {self.selected_result}")
+                self.isSearching = False
+                return True
+        return False
 
     def handle_event(self, event: pygame_event.Event) -> bool:
         if event.type == MOUSEBUTTONDOWN:

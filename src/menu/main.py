@@ -142,11 +142,19 @@ class Menu:
 
     def get_option_by_position(self, mouse_position: tuple[int, int], option_y: int, title_x: int) -> tuple[str, int] | None:
         for i, option in enumerate(self.options):
-            approximate_option_area = Rect(0, 0, 200, 40)
-            approximate_option_area.center = (title_x, option_y)
+            y_position = option_y + self.menu_config["margin_top"] + (i * self.menu_config["gap"])
+            
+            option_surface = self.menu_font.render(option, True, (255, 255, 255))
+            option_rect = option_surface.get_rect(center=(title_x, y_position))
+            
+            clickable_rect = Rect(
+                option_rect.x - 10,
+                option_rect.y - 5,
+                option_rect.width + 20,
+                option_rect.height + 10
+            )
 
-            mouse_x, mouse_y = mouse_position
-            if approximate_option_area.collidepoint(mouse_x, mouse_y):
+            if clickable_rect.collidepoint(mouse_position):
                 return (option, i)
 
         return None

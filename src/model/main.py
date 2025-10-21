@@ -1,18 +1,17 @@
-import pandas as pd 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
-
+from sklearn.metrics import accuracy_score
+import pandas as pd 
 
 class Model:
     def __init__(self, dataset_path) -> None:
         # Initialize our model and load the dataset
         self.dataset_path = dataset_path
         self.train_df = None
+        self.y_train = None
         self.test_df = None
         self.x_train = None
         self.x_test = None
-        self.y_train = None
         self.y_test = None
         
 
