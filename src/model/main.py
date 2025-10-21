@@ -101,6 +101,7 @@ class Model:
         # Trains this DT Classifier with the training set
         dt.fit(self.x_train, self.y_train)
         self.evaluate_model(dt, "Decision Tree")
+    
     """
     # Might move to other function.....
         # Obtain the predictions from the d.tree.analysis 
