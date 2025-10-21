@@ -1,5 +1,8 @@
+from src.menu.main import Menu
+
 def main():
-    pass
+    menu = Menu()
+    menu.start()
 
 if __name__ == "__main__":
     main()
