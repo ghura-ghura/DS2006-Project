@@ -3,6 +3,7 @@ from src.menu.selector.arrow import ArrowSelector
 from src.utils.pygame import quit_program
 from src.menu.search.main import Search
 from src.menu.config import config
+from typing import Callable
 from pygame import (
     QUIT, KEYDOWN, MOUSEBUTTONDOWN, K_UP, K_DOWN, K_RETURN, K_SPACE, K_ESCAPE,
     display, time, font, event as pygame_event, mouse,
@@ -10,7 +11,7 @@ from pygame import (
 )
 
 class Menu:
-    def __init__(self) -> None:
+    def __init__(self, load_file: Callable[[str], None]) -> None:
         pygame_init()
 
         self.selector_config = config["selector_config"]
@@ -31,8 +32,9 @@ class Menu:
         self.menu_font = font.Font(None, self.menu_config["font_size"])
 
         self.options = self.menu_config["options"]["primary"]
+        self.back_rect: Rect | None = None
+        self.load_file = load_file
         self.clock = time.Clock()
-        self.back_rect = None
 
         self.arrow_selector = ArrowSelector(
             offset=self.selector_config["offset"],
@@ -95,7 +97,7 @@ class Menu:
 
     def load_dataset(self) -> None:
         if self.search is None:
-            self.search = Search(self.surface, self.back_font)
+            self.search = Search(self.surface, self.back_font, self.load_file)
         
         self.search.start(
             set_back_rect=self.set_back_rect,
@@ -142,11 +144,19 @@ class Menu:
 
     def get_option_by_position(self, mouse_position: tuple[int, int], option_y: int, title_x: int) -> tuple[str, int] | None:
         for i, option in enumerate(self.options):
-            approximate_option_area = Rect(0, 0, 200, 40)
-            approximate_option_area.center = (title_x, option_y)
+            y_position = option_y + self.menu_config["margin_top"] + (i * self.menu_config["gap"])
+            
+            option_surface = self.menu_font.render(option, True, (255, 255, 255))
+            option_rect = option_surface.get_rect(center=(title_x, y_position))
+            
+            clickable_rect = Rect(
+                option_rect.x - 10,
+                option_rect.y - 5,
+                option_rect.width + 20,
+                option_rect.height + 10
+            )
 
-            mouse_x, mouse_y = mouse_position
-            if approximate_option_area.collidepoint(mouse_x, mouse_y):
+            if clickable_rect.collidepoint(mouse_position):
                 return (option, i)
 
         return None

@@ -1,4 +1,3 @@
-import pandas as pd 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.tree import DecisionTreeClassifier
@@ -32,10 +31,10 @@ class Model:
 
         # Datasets
         self.train_df = None
+        self.y_train = None
         self.test_df = None
         self.x_train = None
         self.x_test = None
-        self.y_train = None
         self.y_test = None
 
         # In memory history list 
