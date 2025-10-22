@@ -4,13 +4,14 @@ from src.menu.search.input.main import InputField
 from src.utils.file import get_file_path_by_name
 from src.types.main import SetBackRectFunction
 from src.menu.config import config
+from typing import Callable
 from pygame import (
     KEYDOWN, K_BACKSPACE, K_RETURN, K_ESCAPE, K_LEFT, K_RIGHT, K_HOME, K_END, MOUSEBUTTONDOWN,
     Surface, event as pygame_event, font, time, display, mouse, draw, Rect
 )
 
 class Search:
-    def __init__(self, surface: Surface, back_font: font.Font) -> None:
+    def __init__(self, surface: Surface, back_font: font.Font, load_file: Callable[[str], None]) -> None:
         self.title_config = config["title_config"]
         self.menu_config = config["menu_config"]
         self.window_config = config["window"]
@@ -23,6 +24,7 @@ class Search:
         self.results: list[str] = []
         self.isSearching = False
 
+        self.load_file = load_file
         self.back_font = back_font
         self.surface = surface
 
@@ -45,44 +47,6 @@ class Search:
 
         self.input_field.set_focus(True)
         self.filter_results("")
-
-    def draw_search_results(self) -> None:
-        if not self.results:
-            self.result_rects = []
-            return None
-            
-        result_y = self.input_field.rect.bottom + (self.input_field_config["text_padding_left"] * 2)
-        result_font = font.Font(None, self.search_config["result_font_size"])
-        self.result_rects = []
-
-        for i, result in enumerate(self.results[:self.search_config["max_results"]]):
-            result_surface = result_font.render(result, True, self.search_config["result_color"])
-            result_rect = result_surface.get_rect()
-            result_rect.x = self.input_field.rect.x
-            result_rect.y = result_y + (i * self.search_config["result_gap"])
-            
-            self.result_rects.append(result_rect)
-
-            mouse_pos = mouse.get_pos()
-            if result_rect.collidepoint(mouse_pos):
-                highlight_rect = Rect(result_rect.x - 5, result_rect.y - 2, result_rect.width + self.input_field_config["text_padding_left"], result_rect.height + 4)
-                draw.rect(self.surface, self.search_config["highlight_color"], highlight_rect)
-
-            self.surface.blit(result_surface, result_rect)
-
-    def filter_results(self, text: str) -> None:
-        txt = text.strip().lower()
-
-        show_all = True if not txt else False
-        self.results = get_file_path_by_name(txt, show_all=show_all)
-
-    def load_selected_result(self) -> None:
-        print(self.results)
-        print(self.selected_result)
-        if self.results:
-            self.selected_result = self.results[0]
-            print(f"Selected dataset: {self.selected_result}")
-            self.isSearching = False 
 
     def start(self, title: str, title_font: font.Font, clock: time.Clock, set_back_rect: SetBackRectFunction) -> None:
         self.isSearching = True
@@ -118,6 +82,45 @@ class Search:
             display.flip()
             clock.tick(60)
 
+    def draw_search_results(self) -> None:
+        if not self.results:
+            self.result_rects = []
+            return None
+            
+        result_y = self.input_field.rect.bottom + (self.input_field_config["text_padding_left"] * 2)
+        result_font = font.Font(None, self.search_config["result_font_size"])
+        self.result_rects = []
+
+        for i, result in enumerate(self.results[:self.search_config["max_results"]]):
+            result_surface = result_font.render(result, True, self.search_config["result_color"])
+            result_rect = result_surface.get_rect()
+            result_rect.x = self.input_field.rect.x
+            result_rect.y = result_y + (i * self.search_config["result_gap"])
+            
+            self.result_rects.append(result_rect)
+
+            mouse_pos = mouse.get_pos()
+            if result_rect.collidepoint(mouse_pos):
+                highlight_rect = Rect(result_rect.x - 5, result_rect.y - 2, result_rect.width + self.input_field_config["text_padding_left"], result_rect.height + 4)
+                draw.rect(self.surface, self.search_config["highlight_color"], highlight_rect)
+
+            self.surface.blit(result_surface, result_rect)
+
+    def filter_results(self, text: str) -> None:
+        txt = text.strip().lower()
+
+        show_all = True if not txt else False
+        self.results = get_file_path_by_name(txt, show_all=show_all)
+
+    def load_selected_result(self) -> None:
+        self.selected_result = self.results[0]
+        if not self.results or not self.selected_result:
+            return None
+
+        self.load_file(self.selected_result)
+
+        self.isSearching = False
+
     def on_key_down(self, event: pygame_event.Event) -> bool:
         if event.key == K_ESCAPE:
             self.isSearching = False
@@ -149,8 +152,7 @@ class Search:
         for i, result_rect in enumerate(self.result_rects):
             if result_rect.collidepoint(event.pos):
                 self.selected_result = self.results[i]
-                print(f"Selected dataset: {self.selected_result}")
-                self.isSearching = False
+                self.load_selected_result()
                 return True
         return False
 
@@ -172,7 +174,7 @@ class Search:
                 self.input_field.handle_backspace()
                 return True
             elif event.key == K_RETURN:
-                self.handle_submit()
+                self.load_selected_result()
                 return True
             elif event.key == K_ESCAPE:
                 self.input_field.set_focus(False)
@@ -194,7 +196,3 @@ class Search:
                 return True
 
         return False
-
-    def handle_submit(self) -> None:
-        if self.results:
-            self.load_selected_result()
