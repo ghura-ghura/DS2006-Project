@@ -1,4 +1,4 @@
-import pandas as pd
+import pandas as pf
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.tree import DecisionTreeClassifier
