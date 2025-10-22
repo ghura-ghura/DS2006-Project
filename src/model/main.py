@@ -6,11 +6,6 @@ import traceback # Just to make it easier when we get errors introduced later..
 from datetime import datetime # Just so we can stamp when we do our runs 
 import os # So that we can search for our dataset
 
-print("\n🔍 Current working directory:", os.getcwd())
-print("📁 __file__:", os.path.abspath(__file__))
-
-
-
 class Model:
     def __init__(self, dataset_path=None):
         # Initialize our model and load the dataset path is set to none by default
@@ -43,8 +38,11 @@ class Model:
 
         # History log for ur runs & printing previous runs if they exist for the file 
         self.history_file = "model_history.txt"
-        self.load_history()
+        # Verbose = to solve false prints when running.. 
+        self.load_history(verbose=False)
     
+
+################ PATH AND History ########################     
     # Get the path for the datasets thats relative 
     def get_dataset_path(self, relative_path):
         # Set the path relative to project root 
@@ -52,12 +50,13 @@ class Model:
         return os.path.join(project_root, relative_path)
 
     # Load previous runs 
-    def load_history(self):
+    def load_history(self, verbose=False):
         if os.path.exists(self.history_file):
-            print("\nprevious model runs: ")
-            with open(self.history_file, "r") as f: 
-                print(f.read())
-        else:
+            if verbose:
+                print("\nprevious model runs: ")
+                with open(self.history_file, "r") as f: 
+                    print(f.read())
+        elif verbose:
             print("\nNo previous history seems to exist")
     
     # Append new model results to a text file 
@@ -71,6 +70,20 @@ class Model:
         except Exception as e:
             print("Could not save history: ", e)
 
+      # To save our results if the user wants that..     
+    def save_results(self, filename="results.text"):
+        try: 
+            with open(filename, "w") as f:
+                for record in self.model_history:
+                    f.write(f"{record['timestamp']} - {record['model']} - Accuracy: {record['accuracy']:.2f}\n")
+            print("\nYou have successfull saved the results to {filename}")
+
+        except Exception as e:
+            print("Could unfortunatly not save your results", str(e))
+
+############################################################
+
+################ Loading - 3a ##############################  
     # Loading the dataset from the path that is given by our user
     def loading_data(self, path=None):
         # Check so that the Dataset was entered correctly 
@@ -114,7 +127,7 @@ class Model:
         except Exception as e: 
             print("Unfortunatly we incounted an error when loading the dataset: ", str(e))
             traceback.print_exc()
-        
+
     # Process and split the data into features and target
     def process_data(self):
         # Check if data has been loaded or not
@@ -134,7 +147,6 @@ class Model:
                     .str.replace("_", " ")
                 )
        
-
             # Split train 
             self.x_train = self.train_df.drop("UNS", axis=1)
             self.y_train = self.train_df["UNS"]
@@ -147,66 +159,7 @@ class Model:
         except Exception as e: 
             print("Error processing the data: ", str(e))
             traceback.print_exc()
-
-    # Combining the evaluation model to avoid duplicated code in the seperate instances
-    def evaluate_model(self, model, model_name):
-        try: 
-            # Allow the user to specify a different dataset for evaluation 
-            use_cust_eval = input("\n Do you want to load a seperate dataset for evaluation? Yes/No: ").strip().lower()
-            if use_cust_eval == "yes":
-                eval_path = input("Enter the dataset path for evaluation: ").strip()
-                # Check so it exists
-                if os.path.exists(eval_path):
-                    eval_df = pd.read_excel(eval_path)
-                    X_eval = eval_df.drop("UNS", axis=1)
-                    y_eval = eval_df["UNS"]
-                    predictions = model.predict(X_eval)
-                else: 
-                    print("File not found using default test data instead")
-                    predictions = model.predict(self.x_test)
-                    y_eval = self.y_test
-            else: 
-                predictions = model.predict(self.x_test)
-                y_eval = self.y_test
-
-            # Create the accuracy score
-            acc = accuracy_score(self.y_test, predictions)
-            print(f"\n {model_name} Evaluation of the results")
-            print(f"Accuracy score rounced to two numbers is: {acc:.2f}")
-
-            # Added so we get zero instead of a warning when doing zero division, Got it before... 
-            print(classification_report(self.y_test, predictions,zero_division=0))
-            print("-" * 60)
-
-            # Log our results
-            self.model_history.append({
-                "model": model_name,
-                "accuracy": acc,
-                "timestamp": datetime.now()
-            })
-
-            # Ask user if they want to save the results to a file
-            save_res = input("Would you like to save your results to a file? yes or no")
-            if save_res == "yes":
-                filename = input("Enter the filename that you want to store your results")
-                self.save_results(filename)
-
-        except Exception as e:
-            print(" Error during model evalutation:", str(e))
-            traceback.print_exc()
-    
-    # To save our results if the user wants that..     
-    def save_results(self, filename="results.text"):
-        try: 
-            with open(filename, "w") as f:
-                for record in self.model_history:
-                    f.write(f"{record['timestamp']} - {record['model']} - Accuracy: {record['accuracy']:.2f}\n")
-            print("\nYou have successfull saved the results to {filename}")
-
-        except Exception as e:
-            print("Could unfortunatly not save your results", str(e))
-
-
+################ Chose model and train it - 3b ##############################
     # Chose wich model to use 
     def chose_model(self, model_type):
         if not self.data_loaded:
@@ -222,7 +175,6 @@ class Model:
             self.decision_tree_analysis()
         else:
             print("This model type is unknown, {model_type}. Chose either knn or decision_tree")
-
 
     # Train our model 1  KNN since the dataset was already split in train/test we don't do any split. 
     def knn_analysis(self, k=5):
@@ -268,6 +220,58 @@ class Model:
         except Exception as e: 
             print("\nHoly moly we got an error when running the DT-model")
             traceback.print_exc()
+############################################################
+
+################ Evaluate and save - 3c ##############################
+    # Combining the evaluation model to avoid duplicated code in the seperate instances
+    def evaluate_model(self, model, model_name):
+        try: 
+            # Allow the user to specify a different dataset for evaluation 
+            use_cust_eval = input("\n Do you want to load a seperate dataset for evaluation? Yes/No: ").strip().lower()
+            if use_cust_eval == "yes":
+                eval_path = input("Enter the dataset path for evaluation: ").strip()
+                # Check so it exists
+                if os.path.exists(eval_path):
+                    eval_df = pd.read_excel(eval_path)
+                    X_eval = eval_df.drop("UNS", axis=1)
+                    y_eval = eval_df["UNS"]
+                    predictions = model.predict(X_eval)
+                else: 
+                    print("File not found using default test data instead")
+                    predictions = model.predict(self.x_test)
+                    y_eval = self.y_test
+            else: 
+                predictions = model.predict(self.x_test)
+                y_eval = self.y_test
+
+            # Create the accuracy score
+            acc = accuracy_score(self.y_test, predictions)
+            print(f"\n {model_name} Evaluation of the results")
+            print(f"Accuracy score rounced to two numbers is: {acc:.2f}")
+
+            # Added so we get zero instead of a warning when doing zero division, Got it before... 
+            print(classification_report(self.y_test, predictions,zero_division=0))
+            print("-" * 60)
+
+            # Log our results
+            self.model_history.append({
+                "model": model_name,
+                "accuracy": acc,
+                "timestamp": datetime.now()
+            })
+
+            # Ask user if they want to save the results to a file
+            save_res = input("Would you like to save your results to a file? yes or no: ")
+            if save_res == "yes":
+                filename = input("Enter the filename that you want to store your results: ")
+                self.save_results(filename)
+
+        except Exception as e:
+            print(" Error during model evalutation:", str(e))
+            traceback.print_exc()
+    
+  
+################ Simulate real environment - 3d ##############################
     
     def predict_by_example(self):
         if not self.model_trained:
@@ -291,7 +295,8 @@ class Model:
         except Exception as e:
             print("Error during the ex prediction: ", str(e))
             traceback.print_exc()
-
+############################################################
+################ Utilities/testing ##############################
     # Make it so we can seach for our datasets
     def list_availible_data(self, dataset_dir="dataset"):
         # Serching for the files in the datasets folder
@@ -322,18 +327,9 @@ class Model:
             # Check so that user choses in the range of files and default to 0 if they don't make a choice 
             selected = files[0] if not choice else files[int(choice) - 1]
             full_path = os.path.join(dataset_path, selected)
-            print(f"✅ You selected: {full_path}")
+            print(f" You selected the follwing path: {full_path}")
             return full_path
-           
-            """
-            if not choice:
-                selected = files[0]
-            elif choice.isdigit() and 1 <= int(choice) <= len(files):
-                return files[int(choice)-1]
-            else:
-                print("\nThats not a valid option m8")
-                return None 
-            """
+        
             # Return our full path
             full_path = os.path.join(dataset_path, selected)
             print(f"\n You have selected: {full_path}")
@@ -384,8 +380,6 @@ class Model:
     
 # Testing the loading 
 m = Model()
-dataset_path = m.get_dataset_path("dataset/Data_User_Modeling_Dataset_Hamdi Tolga KAHRAMAN.xls")
-m.loading_data(dataset_path)
 m.run_everything()
 """
 When we want to run this from our main program
