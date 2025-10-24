@@ -115,10 +115,14 @@ class OptionsMenu:
                     return
 
                 timestamp = datetime.now().timestamp()
-                file_name = f"dataset_{timestamp}.json"
+                file_name = self.conversion.to_str(
+                    prompt="Enter a name for the file: ", 
+                    additional_checks=lambda inp: "." not in inp,
+                    err_msg="Invalid input. Please enter the file name only (no extensions).",
+                )
 
                 create_folder(folder_path=RESULTS_FOLDER)
-                write_to_file_json(file_path=f"{RESULTS_FOLDER}/{file_name}", dataset=dataset, timestamp=timestamp)
+                write_to_file_json(file_path=f"{RESULTS_FOLDER}/{file_name}_{timestamp}.json", dataset=dataset, timestamp=timestamp)
                 print(f"Progress saved successfully to {file_name}")
                 quit(set_exiting=self.set_exiting, force_exit=True)
 
