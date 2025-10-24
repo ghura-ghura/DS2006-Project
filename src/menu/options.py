@@ -1,5 +1,5 @@
 from src.utils.file import render_available_datasets_and_get_file_name_and_load_dataset, write_to_file_json
-from src.utils.sys import clear_screen_windows, flush_input_windows, quit
+from src.utils.sys import clear_screen, flush_input, quit
 from src.types.dataclass import ModelClassifier
 from src.utils.conversion import Conversion
 from src.config.main import RESULTS_FOLDER
@@ -32,8 +32,8 @@ class OptionsMenu:
                 dataset = render_available_datasets_and_get_file_name_and_load_dataset(load_dataset=self.model.load_dataset, conversion=self.conversion, load_rows=10)
                 self.dataset_menu = DatasetMenu(dataset=dataset)
 
-                clear_screen_windows()
-                flush_input_windows()
+                clear_screen()
+                flush_input()
 
                 self.dataset_menu.render(first_x_rows=10)
             case "Train model":
@@ -127,8 +127,8 @@ class OptionsMenu:
         
         self.dataset_menu = DatasetMenu(dataset=self.model.get_dataset())
         
-        clear_screen_windows()
-        flush_input_windows()
+        clear_screen()
+        flush_input()
         
         self.dataset_menu.render_model_evaluation()
         

@@ -1,5 +1,5 @@
 from src.config.main import menu_config, train_model_options
-from src.utils.sys import clear_screen_windows, quit
+from src.utils.sys import clear_screen, quit
 from src.menu.options import OptionsMenu
 from src.types.dataclass import Dataset
 from src.menu.key import KeyHandler
@@ -27,7 +27,7 @@ class Menu:
 
     def start(self, clear_screen: bool = True) -> None:
         if clear_screen:
-            clear_screen_windows()
+            clear_screen()
         
         self.render_title(menu_config["title"])
 
@@ -75,11 +75,11 @@ class Menu:
                 match key:
                     case 'w' | 'W':
                         self.selected_option = (self.selected_option - 1) % len(self.options)
-                        clear_screen_windows()
+                        clear_screen()
                         self.start()
                     case 's' | 'S':
                         self.selected_option = (self.selected_option + 1) % len(self.options)
-                        clear_screen_windows()
+                        clear_screen()
                         self.start()
                     case '\r':
                         self.select_option()
@@ -91,7 +91,7 @@ class Menu:
 
     def select_option(self) -> None:
         self.isOptionSelected = True
-        clear_screen_windows()
+        clear_screen()
 
         self.render_title(menu_config["title"])
         self.render_options(options=self.options, instruction=self.instruction)
