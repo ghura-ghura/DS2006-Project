@@ -75,13 +75,13 @@ class Dataset:
         if not evaluation:
             return None
 
-        model_classifier_dict = self.model_classifier_to_dict(model_classifier=ModelClassifier(model=evaluation.model, name=evaluation.name))
         
         return {
             "classification_report": evaluation.classification_report,
             "precisions": evaluation.precisions.tolist(),
+            "model": type(evaluation.model).__name__,
             "accuracy": evaluation.accuracy,
-            **model_classifier_dict.items(),
+            "name": evaluation.name,
         }
 
     def basic_statistics_to_dict(self, basic_statistics: BasicStatistics) -> dict:
