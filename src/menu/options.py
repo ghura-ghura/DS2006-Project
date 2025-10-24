@@ -1,4 +1,4 @@
-from src.utils.file import render_available_datasets_and_get_file_name_and_load_dataset, write_to_file_json
+from src.utils.file import create_folder, render_available_datasets_and_get_file_name_and_load_dataset, write_to_file_json
 from src.utils.sys import clear_screen, flush_input, quit
 from src.types.dataclass import ModelClassifier
 from src.utils.conversion import Conversion
@@ -116,6 +116,8 @@ class OptionsMenu:
 
                 timestamp = datetime.now().timestamp()
                 file_name = f"dataset_{timestamp}.json"
+
+                create_folder(folder_path=RESULTS_FOLDER)
                 write_to_file_json(file_path=f"{RESULTS_FOLDER}/{file_name}", dataset=dataset, timestamp=timestamp)
                 print(f"Progress saved successfully to {file_name}")
                 quit(set_exiting=self.set_exiting, force_exit=True)

@@ -1,8 +1,8 @@
 from src.config.main import DATASETS_FOLDER
 from src.utils.conversion import Conversion
 from src.types.dataclass import Dataset
+from os import listdir, path, makedirs
 from src.utils.catch import try_catch
-from os import listdir, path
 from typing import Callable
 from json import dump
 
@@ -67,3 +67,7 @@ def render_available_datasets_and_get_file_name_and_load_dataset(load_dataset: C
 def write_to_file_json(file_path: str, dataset: Dataset, timestamp: float | None = None) -> None:
     with open(file_path, "w") as file:
         dump(dataset.to_dict(timestamp=timestamp), file, indent=4)
+
+def create_folder(folder_path: str) -> None:
+    if not path.exists(folder_path):
+        makedirs(folder_path)
