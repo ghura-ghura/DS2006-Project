@@ -63,5 +63,5 @@ def render_available_datasets_and_get_file_name_and_load_dataset(load_dataset: C
     dataset = load_dataset(file_path=f"{DATASETS_FOLDER}/{file_name_or_number}", load_rows=load_rows)
     return dataset
 
-def write_to_file(file_path: str, content: str) -> None:
+def write_to_file(file_path: str, dataset: Dataset) -> None:
     pass
