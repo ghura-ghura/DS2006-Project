@@ -39,8 +39,8 @@ class Model:
             decision_tree_evaluation=None,
             test_features=test_features,
             train_target=train_target,
-            test_target=test_target,
             k_nearest_neighbors=None,
+            test_target=test_target,
             decision_tree=None,
             path=file_path,
         )
@@ -121,3 +121,20 @@ class Model:
         
         setattr(self.dataset, f"{model_classifier.name.lower().replace(' ', '_')}_evaluation", evaluation)
         return evaluation
+
+    def predict(self, features: DataFrame) -> Series | None:
+        if not self.dataset:
+            return None
+
+        if not self.evaluate_model_class:
+            self.evaluate_model_class = EvaluateModel(dataset=self.dataset, load_dataset=self.load_dataset)
+
+        model_classifier = self.dataset.k_nearest_neighbors if self.dataset.k_nearest_neighbors else self.dataset.decision_tree
+        if not model_classifier:
+            return None
+
+        return self.evaluate_model_class.predict(features=features, model_classifier=model_classifier)
+
+    def create_new_features_sample(self, features: list[float]) -> DataFrame:
+        new_feature_sample = DataFrame([features], columns=["STG", "SCG", "STR", "LPR", "PEG"])
+        return new_feature_sample
