@@ -2,7 +2,8 @@ options = [
     "Load dataset",
     "Train model",
     "Evaluate model",
-    "Simulate test dataset",
+    "Predict a target by new features sample",
+    "Save progress to a file"
 ]
 
 title = "Train a model"
@@ -20,3 +21,4 @@ train_model_options = [
 SUPPORTED_DATASET_EXTENSIONS: list[str] = ["xls", "xlsx"]
 
 DATASETS_FOLDER = "datasets"
+RESULTS_FOLDER = "results"

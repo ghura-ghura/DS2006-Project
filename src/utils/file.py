@@ -2,8 +2,9 @@ from src.config.main import DATASETS_FOLDER
 from src.utils.conversion import Conversion
 from src.types.dataclass import Dataset
 from src.utils.catch import try_catch
-from typing import Callable
 from os import listdir, path
+from typing import Callable
+from json import dump
 
 def get_file_path_by_name(name: str = "", show_all: bool = False) -> list[str]:
     def _get_files() -> list[str]:
@@ -63,5 +64,6 @@ def render_available_datasets_and_get_file_name_and_load_dataset(load_dataset: C
     dataset = load_dataset(file_path=f"{DATASETS_FOLDER}/{file_name_or_number}", load_rows=load_rows)
     return dataset
 
-def write_to_file(file_path: str, dataset: Dataset) -> None:
-    pass
+def write_to_file_json(file_path: str, dataset: Dataset, timestamp: float | None = None) -> None:
+    with open(file_path, "w") as file:
+        dump(dataset.to_dict(timestamp=timestamp), file, indent=4)

@@ -1,9 +1,11 @@
-from src.utils.file import render_available_datasets_and_get_file_name_and_load_dataset
-from src.utils.sys import clear_screen_windows, flush_input_windows
+from src.utils.file import render_available_datasets_and_get_file_name_and_load_dataset, write_to_file_json
+from src.utils.sys import clear_screen_windows, flush_input_windows, quit
 from src.types.dataclass import ModelClassifier
 from src.utils.conversion import Conversion
+from src.config.main import RESULTS_FOLDER
 from src.menu.dataset import DatasetMenu
 from src.model.main import Model
+from datetime import datetime
 from typing import Callable
 
 class OptionsMenu:
@@ -11,10 +13,12 @@ class OptionsMenu:
         self,
         set_trained_models_options: Callable[[list[str]], None],
         set_show_train_model_options: Callable[[bool], None],
+        set_exiting: Callable[[bool], None],
         model: Model,
     ) -> None:
         self.set_show_train_model_options = set_show_train_model_options
         self.set_trained_models_options = set_trained_models_options
+        self.set_exiting = set_exiting
         self.conversion = Conversion()
         self.random_state = 42
         self.n_neighbors = 5
@@ -74,6 +78,47 @@ class OptionsMenu:
                 
                 self.set_show_train_model_options(False)
                 self.set_trained_models_options(list(models.keys()))
+            case "Predict a target by new features sample":
+                dataset = self.model.get_dataset()
+                if not dataset:
+                    print("No dataset loaded. Please load a dataset and train a model before predicting a target by new features sample.\n")
+                    return
+
+                model_classifier = dataset.k_nearest_neighbors if dataset.k_nearest_neighbors else dataset.decision_tree
+                if not model_classifier:
+                    print("No trained models found. Please train a model before predicting a target by new features sample.\n")
+                    return
+                
+                print("Fill out the following features to create a new feature sample: ")
+                err_msg = "Invalid input. Please enter a valid decimal number."
+
+                stg = self.conversion.to_float(prompt="STG (The degree of study time for goal object materails): ", err_msg=err_msg)
+                scg = self.conversion.to_float(prompt="SCG (The degree of repetition number of user for goal object materails): ", err_msg=err_msg)
+                str = self.conversion.to_float(prompt="STR (The degree of study time of user for related objects with goal object): ", err_msg=err_msg)
+                lpr = self.conversion.to_float(prompt="LPR (The exam performance of user for related objects with goal object): ", err_msg=err_msg)
+                peg = self.conversion.to_float(prompt="PEG (The exam performance of user for goal objects): ", err_msg=err_msg)
+
+                new_features_sample = self.model.create_new_features_sample(features=[stg, scg, str, lpr, peg])
+                prediction = self.model.predict(features=new_features_sample)
+
+                if prediction is None:
+                    print("Failed to get prediction. Please try again.")
+                else:
+                    print(f"The predicted target is {prediction[0]}")
+
+                self.set_show_train_model_options(False)
+
+            case "Save progress to a file":
+                dataset = self.model.get_dataset()
+                if not dataset:
+                    print("No dataset loaded. Please load a dataset before saving the progress to a file.\n")
+                    return
+
+                timestamp = datetime.now().timestamp()
+                file_name = f"dataset_{timestamp}.json"
+                write_to_file_json(file_path=f"{RESULTS_FOLDER}/{file_name}", dataset=dataset, timestamp=timestamp)
+                print(f"Progress saved successfully to {file_name}")
+                quit(set_exiting=self.set_exiting, force_exit=True)
 
     def handle_model_evaluation(self) -> None:
         evaluation = self.model.evaluate_model()

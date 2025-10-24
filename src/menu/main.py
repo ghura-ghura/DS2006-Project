@@ -1,5 +1,5 @@
-from src.utils.sys import clear_screen_windows, flush_input_windows
 from src.config.main import menu_config, train_model_options
+from src.utils.sys import clear_screen_windows, quit
 from src.menu.options import OptionsMenu
 from src.types.dataclass import Dataset
 from src.menu.key import KeyHandler
@@ -20,6 +20,7 @@ class Menu:
         self.options_menu = OptionsMenu(
             set_show_train_model_options=self.set_show_train_model_options,
             set_trained_models_options=self.set_trained_models_options,
+            set_exiting=self.set_exiting,
             model=self.model,
         )
         self.key_handler = KeyHandler()
@@ -67,7 +68,7 @@ class Menu:
                 if self.exiting or self.isOptionSelected:
                     return
 
-                key = self.key_handler.get_key_windows()
+                key = self.key_handler.get_key()
                 if not key:
                     continue
                 
@@ -84,11 +85,9 @@ class Menu:
                         self.select_option()
                         break
                     case '\x1b':
-                        self.quit()
-                        break
+                        quit(set_exiting=self.set_exiting)
             except KeyboardInterrupt:
-                self.quit()
-                break
+                quit(set_exiting=self.set_exiting)
 
     def select_option(self) -> None:
         self.isOptionSelected = True
@@ -110,9 +109,7 @@ class Menu:
 
     def set_trained_models_options(self, options: list[str]) -> None:
         self.trained_models_options = options
-        self.selected_option = 0
+        self.selected_option = 0    
 
-    def quit(self) -> None:
-        self.exiting = True
-        flush_input_windows()
-        print("\nExiting...")
+    def set_exiting(self, exiting: bool) -> None:
+        self.exiting = exiting

@@ -29,3 +29,6 @@ class Conversion:
 
     def to_str(self, prompt: str, err_msg: str, exit_on_fail: bool = False, additional_checks: Callable[[str], bool] = lambda x: True) -> str:
         return self.to(prompt, err_msg, str, exit_on_fail, additional_checks)
+
+    def to_float(self, prompt: str, err_msg: str, exit_on_fail: bool = False, additional_checks: Callable[[float], bool] = lambda x: True) -> float:
+        return self.to(prompt, err_msg, float, exit_on_fail, additional_checks)
