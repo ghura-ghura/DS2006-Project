@@ -75,7 +75,7 @@ class Dataset:
         if not evaluation:
             return None
 
-        model_classifier_dict = self.model_classifier_to_dict(evaluation.model)
+        model_classifier_dict = self.model_classifier_to_dict(model_classifier=ModelClassifier(model=evaluation.model, name=evaluation.name))
         
         return {
             "classification_report": evaluation.classification_report,
@@ -86,8 +86,8 @@ class Dataset:
 
     def basic_statistics_to_dict(self, basic_statistics: BasicStatistics) -> dict:
         return {
-            "missing_values": basic_statistics.missing_values.to_dict(),
             "data_types": basic_statistics.data_types.astype(str).to_dict(),
+            "missing_values": basic_statistics.missing_values.to_dict(),
             "summary": basic_statistics.summary.to_dict(),
         }
 

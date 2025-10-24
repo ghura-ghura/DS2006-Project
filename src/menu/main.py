@@ -25,8 +25,8 @@ class Menu:
         )
         self.key_handler = KeyHandler()
 
-    def start(self, clear_screen: bool = True) -> None:
-        if clear_screen:
+    def start(self, should_clear_screen: bool = True) -> None:
+        if should_clear_screen:
             clear_screen()
         
         self.render_title(menu_config["title"])
@@ -101,7 +101,7 @@ class Menu:
         self.isOptionSelected = False
         self.selected_option = 0
         
-        self.start(clear_screen=False)
+        self.start(should_clear_screen=False)
 
     def set_show_train_model_options(self, show: bool) -> None:
         self.show_train_model_options = show
