@@ -1,20 +1,12 @@
-from src.menu.config import DATASETS_FOLDER
+from src.config.main import DATASETS_FOLDER
+from src.utils.conversion import Conversion
+from src.types.dataclass import Dataset
+from src.utils.catch import try_catch
+from typing import Callable
 from os import listdir, path
 
-def get_file_path_by_name(name: str, show_all: bool = False) -> list[str]:
-    """
-    Summary:
-    
-    Get file paths by name from a folder. Optionally show all files in the folder.
-    
-    Args:
-        - name: The name to search for
-        - show_all: Whether to show all files
-    
-    Returns:
-        - List of file paths
-    """
-    try:
+def get_file_path_by_name(name: str = "", show_all: bool = False) -> list[str]:
+    def _get_files() -> list[str]:
         all_files = listdir(DATASETS_FOLDER)
         
         files = []
@@ -33,6 +25,43 @@ def get_file_path_by_name(name: str, show_all: bool = False) -> list[str]:
                 if name.lower() in file.lower():
                     filtered_files.append(file)
             return filtered_files
-    except FileNotFoundError:
-        return []
+    
+    result = try_catch(
+        err_msg=f"Dataset folder '{DATASETS_FOLDER}' not found",
+        exception=FileNotFoundError,
+        include_exception=True,
+        callback=_get_files,
+    )
+    
+    return result if result is not None else []
 
+def get_file_name(prompt: str, available_files: list[str], conversion: Conversion) -> str:
+        file_name = conversion.to_str(
+            additional_checks=lambda file_name: (file_name.isdigit() and available_files[int(file_name) - 1] in available_files) or file_name in available_files,
+            err_msg=f"Please enter a valid file name or number",
+            prompt=prompt,
+        )
+
+        return file_name
+
+def render_available_datasets() -> list[str]:
+    files = get_file_path_by_name(show_all=True)
+
+    print("Available datasets:")
+    for i,file in enumerate(files):
+        print(f"{i + 1}. {file}")
+    print("\n")
+
+    return files
+
+def render_available_datasets_and_get_file_name_and_load_dataset(load_dataset: Callable[[str, int], Dataset], conversion: Conversion, load_rows: int) -> Dataset:
+    available_datasets = render_available_datasets()
+
+    file_name_or_number = get_file_name(prompt="Select a dataset by name or number: ", available_files=available_datasets, conversion=conversion)
+    file_name_or_number = available_datasets[int(file_name_or_number) - 1] if file_name_or_number.isdigit() else file_name_or_number
+
+    dataset = load_dataset(file_path=f"{DATASETS_FOLDER}/{file_name_or_number}", load_rows=load_rows)
+    return dataset
+
+def write_to_file(file_path: str, content: str) -> None:
+    pass

@@ -1,165 +1,119 @@
-from src.utils.pygame import draw_title, draw_options, get_back_instruction_rect, is_back_instruction_clicked
-from src.menu.selector.arrow import ArrowSelector
-from src.utils.pygame import quit_program
-from src.menu.search.main import Search
-from src.menu.config import config
-from typing import Callable
-from pygame import (
-    QUIT, KEYDOWN, MOUSEBUTTONDOWN, K_UP, K_DOWN, K_RETURN, K_SPACE, K_ESCAPE,
-    display, time, font, event as pygame_event, mouse,
-    init as pygame_init, Rect,
-)
+from src.utils.sys import clear_screen_windows, flush_input_windows
+from src.config.main import menu_config, train_model_options
+from src.menu.options import OptionsMenu
+from src.types.dataclass import Dataset
+from src.menu.key import KeyHandler
+from src.model.main import Model
 
 class Menu:
-    def __init__(self, load_file: Callable[[str], None]) -> None:
-        pygame_init()
+    def __init__(self, model: Model) -> None:
+        self.trained_models_options: list[str] = []
+        self.dataset_to_load: str | None = None
+        self.available_datasets: list[str] = []
+        self.show_train_model_options = False
+        self.dataset: Dataset | None = None
+        self.isOptionSelected = False
+        self.selected_option = 0
+        self.exiting = False
+        self.model = model
 
-        self.selector_config = config["selector_config"]
-        self.title_config = config["title_config"]
-        self.menu_config = config["menu_config"]
-        self.window_config = config["window"]
-
-        self.non_selected_option_color = config["colors"]["WHITE"]
-        self.selected_option_color = config["colors"]["RED"]
-        self.selected_option_index = 0
-
-        self.surface = display.set_mode(self.window_config["dimensions"])
-        self.caption = display.set_caption(self.title_config["title"])
-        self.search: Search | None = None
-
-        self.back_font = font.Font(None, self.menu_config["back_font_size"])
-        self.title_font = font.Font(None, self.title_config["font_size"])
-        self.menu_font = font.Font(None, self.menu_config["font_size"])
-
-        self.options = self.menu_config["options"]["primary"]
-        self.back_rect: Rect | None = None
-        self.load_file = load_file
-        self.clock = time.Clock()
-
-        self.arrow_selector = ArrowSelector(
-            offset=self.selector_config["offset"],
-            color=self.selector_config["color"],
-            size=self.selector_config["size"],
-            surface=self.surface,
+        self.options_menu = OptionsMenu(
+            set_show_train_model_options=self.set_show_train_model_options,
+            set_trained_models_options=self.set_trained_models_options,
+            model=self.model,
         )
+        self.key_handler = KeyHandler()
+
+    def start(self, clear_screen: bool = True) -> None:
+        if clear_screen:
+            clear_screen_windows()
         
-    def start(self) -> None:
-        while True:
-            for event in pygame_event.get():
-                if event.type == QUIT:
-                    quit_program()
-                elif event.type == KEYDOWN:
-                    self.onKeyDown(event)
-                elif event.type == MOUSEBUTTONDOWN:
-                    self.onMouseDown(event)
+        self.render_title(menu_config["title"])
 
-            self.surface.fill(self.window_config["color"])
+        if self.show_train_model_options:
+            self.options = train_model_options
+            self.instruction = "Select a model to train:"
+        elif len(self.trained_models_options) > 0:
+            self.options = self.trained_models_options
+            self.instruction = "Select a model to evaluate:"
+        else:
+            self.options = menu_config["options"]
+            self.instruction = "Select an option:"
 
-            back_rect = get_back_instruction_rect(
-                position=self.menu_config["back_position"],
-                color=self.menu_config["back_color"],
-                text=self.menu_config["back_text"],
-                back_font=self.back_font,
-                surface=self.surface,
-            )
-            self.set_back_rect(back_rect)
+        self.render_options(options=self.options, instruction=self.instruction)
 
-            draw_title(self.surface, self.title_config["title"], self.title_font, self.title_config["color"], self.title_config["position"])
-                        
-            draw_options(
-                selector_fn=lambda i: self.arrow_selector.draw(
-                    title_position=self.title_config["position"],
-                    margin_top=self.menu_config["margin_top"],
-                    gap=self.menu_config["gap"],
-                    index=i,
-                ) if i == self.selected_option_index else None,
-                color_fn=lambda i: self.selected_option_color if i == self.selected_option_index else self.non_selected_option_color,
-                title_position=self.title_config["position"],
-                margin_top=self.menu_config["margin_top"],
-                gap=self.menu_config["gap"],
-                surface=self.surface,
-                options=self.options,
-                font=self.menu_font,
-                alpha=None,
-            )
+        if not self.isOptionSelected:
+            self.handle_input()
 
-            display.flip()
-            self.clock.tick(60)
+    def render_title(self, title: str) -> None:
+        seperator = "=" * len(title)
+        print(f"{seperator} {title} {seperator}")
 
-    def onOptionClick(self, option: str) -> None:
-        match option:
-            case "Load dataset":
-                self.load_dataset()
-            case "Train model":
-                self.train_model()
-            case "Evaluate model":
-                self.evaluate_model()
+    def render_options(self, options: list[str], instruction: str) -> None:
+        print(instruction)
 
-    def load_dataset(self) -> None:
-        if self.search is None:
-            self.search = Search(self.surface, self.back_font, self.load_file)
+        for i, option in enumerate(options):
+            arrow = " "
+            if i == self.selected_option:
+                arrow = "→" if not self.isOptionSelected else "✓"
+
+            print(f"{arrow}  {i + 1}.  {option}")
         
-        self.search.start(
-            set_back_rect=self.set_back_rect,
-            title_font=self.title_font,
-            title="Load Dataset",
-            clock=self.clock,
-        )
-    
-    def train_model(self) -> None:
-        pass
+        print("\nPress Esc to quit\n") 
 
-    def evaluate_model(self) -> None:
-        pass
-
-    def onKeyDown(self, event: pygame_event.Event) -> None:
-        if event.key == K_UP:
-            self.selected_option_index = (self.selected_option_index - 1) % len(self.options)
-        elif event.key == K_DOWN:
-            self.selected_option_index = (self.selected_option_index + 1) % len(self.options)
-        elif event.key == K_RETURN or event.key == K_SPACE:
-            self.onOptionClick(self.options[self.selected_option_index])
-        elif event.key == K_ESCAPE:
-            quit_program()
-
-    def onMouseDown(self, event: pygame_event.Event) -> None:
-        match event.button:
-            case 1:
-                mouse_position = mouse.get_pos()
-                
-                if self.back_rect and is_back_instruction_clicked(mouse_position, self.back_rect):
-                    quit_program()
+    def handle_input(self) -> None:
+        while not self.exiting:
+            try:
+                if self.exiting or self.isOptionSelected:
                     return
+
+                key = self.key_handler.get_key_windows()
+                if not key:
+                    continue
                 
-                option_data = self.get_option_by_position(
-                    option_y=self.title_config["position"][1],
-                    title_x=self.title_config["position"][0],
-                    mouse_position=mouse_position,
-                )
+                match key:
+                    case 'w' | 'W':
+                        self.selected_option = (self.selected_option - 1) % len(self.options)
+                        clear_screen_windows()
+                        self.start()
+                    case 's' | 'S':
+                        self.selected_option = (self.selected_option + 1) % len(self.options)
+                        clear_screen_windows()
+                        self.start()
+                    case '\r':
+                        self.select_option()
+                        break
+                    case '\x1b':
+                        self.quit()
+                        break
+            except KeyboardInterrupt:
+                self.quit()
+                break
 
-                if option_data is not None:
-                    option, option_index = option_data
-                    self.selected_option_index = option_index
-                    self.onOptionClick(option)
+    def select_option(self) -> None:
+        self.isOptionSelected = True
+        clear_screen_windows()
 
-    def get_option_by_position(self, mouse_position: tuple[int, int], option_y: int, title_x: int) -> tuple[str, int] | None:
-        for i, option in enumerate(self.options):
-            y_position = option_y + self.menu_config["margin_top"] + (i * self.menu_config["gap"])
-            
-            option_surface = self.menu_font.render(option, True, (255, 255, 255))
-            option_rect = option_surface.get_rect(center=(title_x, y_position))
-            
-            clickable_rect = Rect(
-                option_rect.x - 10,
-                option_rect.y - 5,
-                option_rect.width + 20,
-                option_rect.height + 10
-            )
+        self.render_title(menu_config["title"])
+        self.render_options(options=self.options, instruction=self.instruction)
+        
+        print(self.show_train_model_options)
+        self.options_menu.on_option_click(options=self.options, selected_option=self.selected_option, is_evaluating=not self.show_train_model_options)
+        
+        self.isOptionSelected = False
+        self.selected_option = 0
+        
+        self.start(clear_screen=False)
 
-            if clickable_rect.collidepoint(mouse_position):
-                return (option, i)
+    def set_show_train_model_options(self, show: bool) -> None:
+        self.show_train_model_options = show
+        self.selected_option = 0
 
-        return None
+    def set_trained_models_options(self, options: list[str]) -> None:
+        self.trained_models_options = options
+        self.selected_option = 0
 
-    def set_back_rect(self, back_rect: Rect) -> None:
-        self.back_rect = back_rect
+    def quit(self) -> None:
+        self.exiting = True
+        flush_input_windows()
+        print("\nExiting...")
