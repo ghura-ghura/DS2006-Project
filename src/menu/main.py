@@ -97,7 +97,6 @@ class Menu:
         self.render_title(menu_config["title"])
         self.render_options(options=self.options, instruction=self.instruction)
         
-        print(self.show_train_model_options)
         self.options_menu.on_option_click(options=self.options, selected_option=self.selected_option, is_evaluating=not self.show_train_model_options)
         
         self.isOptionSelected = False

@@ -7,7 +7,12 @@ from src.model.main import Model
 from typing import Callable
 
 class OptionsMenu:
-    def __init__(self, model: Model, set_show_train_model_options: Callable[[bool], None], set_trained_models_options: Callable[[list[str]], None]) -> None:
+    def __init__(
+        self,
+        set_trained_models_options: Callable[[list[str]], None],
+        set_show_train_model_options: Callable[[bool], None],
+        model: Model,
+    ) -> None:
         self.set_show_train_model_options = set_show_train_model_options
         self.set_trained_models_options = set_trained_models_options
         self.conversion = Conversion()
@@ -38,8 +43,7 @@ class OptionsMenu:
                     self.model.train_model(classifier="K Nearest Neighbors", n_neighbors=self.n_neighbors, random_state=None)
                     print("K Nearest Neighbors trained successfully")
                 else:
-                    evaluation = self.model.evaluate_model()
-                    print(evaluation)
+                    self.handle_model_evaluation()
 
                 self.set_show_train_model_options(False)
             case "Decision Tree":
@@ -47,8 +51,7 @@ class OptionsMenu:
                     self.model.train_model(classifier="Decision Tree", random_state=self.random_state, n_neighbors=None)
                     print("Decision Tree trained successfully")
                 else:
-                    evaluation = self.model.evaluate_model()
-                    print(evaluation)
+                    self.handle_model_evaluation()
 
                 self.set_show_train_model_options(False)
             case "Evaluate model":
@@ -71,3 +74,18 @@ class OptionsMenu:
                 
                 self.set_show_train_model_options(False)
                 self.set_trained_models_options(list(models.keys()))
+
+    def handle_model_evaluation(self) -> None:
+        evaluation = self.model.evaluate_model()
+        if not evaluation:
+            return
+        
+        self.dataset_menu = DatasetMenu(dataset=self.model.get_dataset())
+        
+        clear_screen_windows()
+        flush_input_windows()
+        
+        self.dataset_menu.render_model_evaluation()
+        
+        input("\nPress Enter to continue...")
+        self.set_trained_models_options([])

@@ -7,8 +7,24 @@ class DatasetMenu:
         self.width = 60
 
     def render(self, first_x_rows: int = 10) -> None:
-        self.render_first_x_rows_for_train_and_test_sets(x=first_x_rows)
+        self.render_first_x_rows(x=first_x_rows)
         self.render_basic_statistics()
+
+    def render_model_evaluation(self) -> None:
+        evaluations = []
+        
+        if self.dataset.k_nearest_neighbors_evaluation:
+            evaluations.append(self.dataset.k_nearest_neighbors_evaluation)
+        if self.dataset.decision_tree_evaluation:
+            evaluations.append(self.dataset.decision_tree_evaluation)
+        
+        if not evaluations:
+            print("\nNo model evaluations available.")
+            return
+        
+        for evaluation in evaluations:
+            self.render_single_model_evaluation(evaluation)
+            print()
 
     def render_basic_statistics(self) -> None:
         print("\n" + " " * 20 + "Basic Statistics:")
@@ -20,29 +36,14 @@ class DatasetMenu:
         train_str = str(train_stats)
         test_str = str(test_stats)
         
-        train_lines = train_str.split('\n')
-        test_lines = test_str.split('\n')
+        self.render_two_column_layout(
+            left_header="Train Statistics:",
+            right_header="Test Statistics:",
+            left_content=train_str,
+            right_content=test_str,
+        )
         
-        train_header = "Train Statistics:"
-        test_header = "Test Statistics:"
-        
-        train_padding = " " * (self.width - len(train_header))
-        
-        print(f"{train_header}{train_padding} | {test_header}")
-        print("-" * (self.width + self.width + 3))
-        
-        max_lines = max(len(train_lines), len(test_lines))
-        
-        for i in range(max_lines):
-            train_line = train_lines[i] if i < len(train_lines) else ""
-            test_line = test_lines[i] if i < len(test_lines) else ""
-            
-            train_line_padding = " " * (self.width - len(train_line))
-            print(f"{train_line}{train_line_padding} | {test_line}")
-        
-        print("-" * (self.width + self.width + 3))
-        
-    def render_first_x_rows_for_train_and_test_sets(self, x: int = 10) -> None:
+    def render_first_x_rows(self, x: int = 10) -> None:
         train_data = self.dataset.train_dataframe_first_x_rows[:x]
         test_data = self.dataset.test_dataframe_first_x_rows[:x]
         
@@ -56,25 +57,25 @@ class DatasetMenu:
         print(f"\n{' ' * self.width}{self.dataset.path}")
         print("=" * max_width)
 
-        train_header_padding = " " * (self.width - len(train_header))
-        print(f"{train_header}{train_header_padding} | {test_header}")
-        print("-" * (max_width + 2))
+        train_content = self.generate_rows_content(train_data, max_rows)
+        test_content = self.generate_rows_content(test_data, max_rows)
         
+        self.render_two_column_layout(
+            left_content=train_content,
+            right_content=test_content,
+            left_header=train_header,
+            right_header=test_header
+        )
+
+    def generate_rows_content(self, data: list[dict[str, str]], max_rows: int) -> str:
+        content_lines = []
         for i in range(max_rows):
-            train_display = self.generate_first_x_rows_display(index=i, data=train_data)
-            test_display = self.generate_first_x_rows_display(index=i, data=test_data)
-            
-            # Print both sides
-            if train_display and test_display:
-                lines1 = train_display.split('\n')
-                lines2 = test_display.split('\n')
-                max_lines = max(len(lines1), len(lines2))
-                
-                for j in range(max_lines):
-                    left_line = lines1[j] if j < len(lines1) else ""
-                    right_line = lines2[j] if j < len(lines2) else ""
-                    left_line_padding = " " * (self.width - len(left_line))
-                    print(f"{left_line}{left_line_padding} | {right_line}")
+            display = self.generate_first_x_rows_display(index=i, data=data)
+            if display:
+                content_lines.append(display)
+            else:
+                content_lines.append("")
+        return "\n".join(content_lines)
 
     def generate_first_x_rows_display(self, index: int, data: list[dict[str, str]]) -> str | None:
         if index >= len(data):
@@ -97,3 +98,92 @@ class DatasetMenu:
         
         return " | ".join(formatted_features) + " |"
 
+    def render_single_model_evaluation(self, evaluation) -> None:
+        print(f"\n{' ' * 20}Model Evaluation: {evaluation.name}")
+        print("-" * 120)
+        
+        self.render_accuracy(evaluation)
+        self.render_predictions(evaluation)
+        self.render_classification_report(evaluation)
+        
+        print("-" * 120)
+
+    def render_accuracy(self, evaluation) -> None:
+        accuracy_header = "Accuracy:"
+        accuracy_value = f"{evaluation.accuracy:.4f} ({evaluation.accuracy * 100:.2f}%)"
+        
+        accuracy_width = 50
+        accuracy_padding = " " * (accuracy_width - len(accuracy_header))
+        print(f"{accuracy_header}{accuracy_padding} | {accuracy_value}")
+
+    def render_predictions(self, evaluation) -> None:
+        predictions = evaluation.precisions
+        
+        unique_predictions = predictions.value_counts()
+        total_predictions = len(predictions)
+        
+        print(f"\nPredictions Summary:")
+        print(f"Total predictions: {total_predictions}")
+        print(f"Prediction distribution:")
+        
+        for prediction, count in unique_predictions.items():
+            percentage = (count / total_predictions) * 100
+            print(f"  {prediction}: {count} ({percentage:.1f}%)")
+        
+        print(f"\nFirst 10 predictions:")
+        for i, pred in enumerate(predictions.head(10)):
+            print(f"  {i+1:2d}. {pred}")
+        
+        if len(predictions) > 10:
+            print(f"  ... and {len(predictions) - 10} more")
+
+    def render_classification_report(self, evaluation) -> None:
+        report = evaluation.classification_report
+        
+        print(f"\n{'Classification Report:':<{self.width}} |")
+        
+        for class_name, metrics in report.items():
+            if isinstance(metrics, dict) and class_name not in ['accuracy', 'macro avg', 'weighted avg']:
+                self.render_class_metrics(class_name, metrics)
+        
+        if 'macro avg' in report:
+            self.render_class_metrics('Macro Average', report['macro avg'])
+        if 'weighted avg' in report:
+            self.render_class_metrics('Weighted Average', report['weighted avg'])
+
+    def render_class_metrics(self, class_name: str, metrics: dict) -> None:
+        precision = metrics.get('precision', 0)
+        recall = metrics.get('recall', 0)
+        f1_score = metrics.get('f1-score', 0)
+        support = metrics.get('support', 0)
+        
+        metrics_line = f"{class_name:<15} | Precision: {precision:.3f} | Recall: {recall:.3f} | F1: {f1_score:.3f} | Support: {support}"
+        
+        if len(metrics_line) > self.width:
+            left_part = f"{class_name:<15} | Precision: {precision:.3f} | Recall: {recall:.3f}"
+            right_part = f"F1: {f1_score:.3f} | Support: {support}"
+            
+            left_padding = " " * (self.width - len(left_part))
+            print(f"{left_part}{left_padding} | {right_part}")
+        else:
+            left_padding = " " * (self.width - len(metrics_line))
+            print(f"{metrics_line}{left_padding} |")
+
+    def render_two_column_layout(self, left_content: str, right_content: str, left_header: str = "", right_header: str = "") -> None:
+        if left_header and right_header:
+            left_padding = " " * (self.width - len(left_header))
+            print(f"{left_header}{left_padding} | {right_header}")
+            print("-" * (self.width + self.width + 3))
+        
+        left_lines = left_content.split('\n')
+        right_lines = right_content.split('\n')
+        max_lines = max(len(left_lines), len(right_lines))
+        
+        for i in range(max_lines):
+            left_line = left_lines[i] if i < len(left_lines) else ""
+            right_line = right_lines[i] if i < len(right_lines) else ""
+            
+            left_line_padding = " " * (self.width - len(left_line))
+            print(f"{left_line}{left_line_padding} | {right_line}")
+        
+        print("-" * (self.width + self.width + 3))

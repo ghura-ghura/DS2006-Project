@@ -17,9 +17,9 @@ class ModelClassifier:
 @dataclass
 class ModelEvaluation:
     model: KNeighborsClassifier | DecisionTreeClassifier
-    classification_report: dict | str
-    precision: Series
-    accuracy: Series
+    classification_report: dict
+    precisions: Series
+    accuracy: float
     name: str
 
 @dataclass
