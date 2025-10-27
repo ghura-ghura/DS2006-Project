@@ -9,12 +9,6 @@ class KeyHandler:
         pass
 
     def get_key(self) -> str | None:
-        """
-        if self.is_windows:
-            return self.get_key_windows()
-        else:
-            return self.get_key_unix()
-        """
         # Block until a key is pressed and normalize menu and make sure to treat w and "uparrow" and s"downarrow"
         k = readkey() # crossplattform read 
 
